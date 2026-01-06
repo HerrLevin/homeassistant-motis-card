@@ -1,0 +1,13 @@
+{
+  "name": "motis-departures-card",
+  "display_name": "Motis Departures Card",
+  "category": "frontend",
+  "content_in_root": true,
+  "zip_release": false,
+  "filename": "motis-departures-card.js",
+  "homeassistant": "2021.12.0",
+  "render_readme": true,
+  "description": "Lovelace card showing next departures from Motis with route colors and route text colors.",
+  "tags": ["lovelace", "card", "motis"]
+}
+
