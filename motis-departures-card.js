@@ -101,7 +101,7 @@ class MotisDeparturesCard extends HTMLElement {
         if (it.delay !== null) {
           delay = `<span style="${delayStyle}">(${it.delay > 0 ? '+' : ''}${it.delay} min)</span>`;
         }
-        const blinkingText = it.until && isNaN(parseInt(it.until.charAt(0))) ? '.blinking-text' : '';
+        const blinkingText = it.until && isNaN(parseInt(it.until.charAt(0))) ? 'blinking-text' : '';
         const cancelledBadge = it.cancelled ? ' (cancelled)' : '';
         content += `
         <div class="row">
@@ -114,7 +114,7 @@ class MotisDeparturesCard extends HTMLElement {
                 </div>
                 <div class="platform">
                     ${this._escapeHtml(it.platform || '')}
-                    <span style="color: ${delayColor}" class="${blinkingText}">${it.until ? ' Â· ' + this._escapeHtml(it.until) : ''}</span>
+                    <span style="color: ${delayColor}" class="${blinkingText}">${it.until ? ' · ' + this._escapeHtml(it.until) : ''}</span>
                     ${delay}
                 </div>
             </div>
