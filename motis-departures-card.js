@@ -40,6 +40,22 @@ class MotisDeparturesCard extends HTMLElement {
       .destination .platform { color: var(--secondary-text-color); font-size:12px; }
       .chip { padding:4px 8px; border-radius:12px; font-weight:600; font-size:12px; display:inline-block; min-width:36px; text-align:center; }
       .empty { color: var(--secondary-text-color); }
+      @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+        .blinking-text {
+            animation: blink 1s infinite;
+        }
     `;
 
     const title = this._config.title || 'Next departures';
@@ -52,13 +68,23 @@ class MotisDeparturesCard extends HTMLElement {
         const label = attrs.label || attrs.route || attrs.display_name || '';
         const dest = attrs.destination || attrs.headsign || '';
         const platform = attrs.platform || '';
+        const plannedTime = attrs.planned_time || null;
+        const realTime = attrs.realtime_time || null;
         const time = state.attributes && state.attributes.realtime_time_local ? state.attributes.realtime_time_local : (state.state && state.state.length ? (new Date(state.state).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})) : state.state);
+        const hasRealTime = attrs.realtime || false;
         const until = attrs.time_until_departure || '';
         const cancelled = attrs.cancelled ? true : false;
         const routeColor = (attrs.route_color && attrs.route_color.startsWith('#')) ? attrs.route_color : (attrs.route_color ? ('#' + attrs.route_color) : '#ffffff');
         const routeTextColor = (attrs.route_text_color && attrs.route_text_color.startsWith('#')) ? attrs.route_text_color : (attrs.route_text_color ? ('#' + attrs.route_text_color) : '#000000');
 
-        return { id: state.entity_id, label, dest, platform, time, until, cancelled, routeColor, routeTextColor };
+        let delay = null;
+        if (plannedTime && realTime && hasRealTime) {
+            const plannedDate = new Date(plannedTime);
+            const realDate = new Date(realTime);
+            delay = Math.round((realDate - plannedDate) / 60000); // delay in minutes
+        }
+
+        return { id: state.entity_id, label, dest, platform, time, until, cancelled, routeColor, routeTextColor, delay };
       });
 
     let content = `\n      <ha-card>\n        <div class="title">${this._escapeHtml(title)}</div>\n`;
@@ -69,13 +95,35 @@ class MotisDeparturesCard extends HTMLElement {
       content += `<div class="list">`;
       for (const it of items) {
         const chipStyle = `background:${it.routeColor}; color:${it.routeTextColor};`;
+        const delayColor = it.delay === null ? null : (it.delay > 2 ? '#ff0000' : '#00aa00');
+        const delayStyle = delayColor ? `color:${delayColor}; font-weight:600; font-size: 10px;` : '';
+        let delay = '';
+        if (it.delay !== null) {
+          delay = `<span style="${delayStyle}">(${it.delay > 0 ? '+' : ''}${it.delay} min)</span>`;
+        }
+        const blinkingText = it.until && isNaN(parseInt(it.until.charAt(0))) ? '.blinking-text' : '';
         const cancelledBadge = it.cancelled ? ' (cancelled)' : '';
-        content += `\n          <div class="row">\n            <div class="time">${this._escapeHtml(it.time || '')}</div>\n            <div class="chip" style="${chipStyle}">${this._escapeHtml(it.label || '')}</div>\n            <div class="meta">\n              <div class="destination"><span class="dest">${this._escapeHtml(it.dest || '')}</span><span style="font-weight:400">${this._escapeHtml(cancelledBadge)}</span></div>\n              <div class="platform">${this._escapeHtml(it.platform || '')}${it.until ? ' · ' + this._escapeHtml(it.until) : ''}</div>\n            </div>\n          </div>`;
+        content += `
+        <div class="row">
+            <div class="time">${this._escapeHtml(it.time || '')}</div>
+            <div class="chip" style="${chipStyle}">${this._escapeHtml(it.label || '')}</div>
+            <div class="meta">
+                <div class="destination">
+                    <span class="dest">${this._escapeHtml(it.dest || '')}</span>
+                    <span style="font-weight:400">${this._escapeHtml(cancelledBadge)}</span>
+                </div>
+                <div class="platform">
+                    ${this._escapeHtml(it.platform || '')}
+                    <span style="color: ${delayColor}" class="${blinkingText}">${it.until ? ' Â· ' + this._escapeHtml(it.until) : ''}</span>
+                    ${delay}
+                </div>
+            </div>
+        </div>`;
       }
       content += `</div>`;
     }
 
-    content += `\n      </ha-card>`;
+    content += `</ha-card>`;
 
     this.shadowRoot.innerHTML = `<style>${style}</style>${content}`;
   }
@@ -92,4 +140,5 @@ class MotisDeparturesCard extends HTMLElement {
 }
 
 customElements.define('motis-departures-card', MotisDeparturesCard);
+
 
